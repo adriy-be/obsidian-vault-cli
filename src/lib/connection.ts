@@ -199,17 +199,23 @@ export async function createDFM(verbose = false): Promise<DirectFileManipulator>
         const dfm = new DirectFileManipulator(options);
 
         // ── 4. Wire handler stubs (synchronous, before init() runs) ────────
-        (dfm.services as any).API.addLog.setHandler((message: any, level: number) => {
-            if (verbose && level >= 32) {
-                const msg = typeof message === "string" ? message : JSON.stringify(message);
-                console.error(`[livesync] ${msg}`);
-            }
-        });
-        (dfm.services as any).API.getSystemVaultName.setHandler(() => "livesync-headless");
-        (dfm.services as any).appLifecycle.isReloadingScheduled.setHandler(() => false);
-        (dfm.services as any).appLifecycle.askRestart.setHandler(() => {});
-        (dfm.services as any).appLifecycle.scheduleRestart.setHandler(() => {});
-        (dfm.services as any).appLifecycle.performRestart.setHandler(() => {});
+        const api = (dfm.services as any).API;
+        if (typeof api?.addLog?.setHandler === "function") {
+            api.addLog.setHandler((message: any, level: number) => {
+                if (verbose && level >= 32) {
+                    const msg = typeof message === "string" ? message : JSON.stringify(message);
+                    console.error(`[livesync] ${msg}`);
+                }
+            }, true);
+        }
+        if (typeof api?.getSystemVaultName?.setHandler === "function") {
+            // Old injectable API shape: method is a handler binder.
+            api.getSystemVaultName.setHandler(() => "livesync-headless", true);
+        }
+        (dfm.services as any).appLifecycle.isReloadingScheduled.setHandler(() => false, true);
+        (dfm.services as any).appLifecycle.askRestart.setHandler(() => {}, true);
+        (dfm.services as any).appLifecycle.scheduleRestart.setHandler(() => {}, true);
+        (dfm.services as any).appLifecycle.performRestart.setHandler(() => {}, true);
 
         // ── 5. Pre-wire database service ────────────────────────────────────
         (dfm.services as any).database._localDatabase = dfm.liveSyncLocalDB;
