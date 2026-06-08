@@ -9,6 +9,7 @@ import Search from "./search.ts";
 import Meta from "./meta.ts";
 import Write from "./write.ts";
 import Delete from "./delete.ts";
+import Move from "./move.ts";
 import Dump from "./dump.ts";
 import Patch from "./patch.ts";
 import Grep from "./grep.ts";
@@ -20,6 +21,7 @@ const commands = {
     meta: Meta,
     write: Write,
     delete: Delete,
+    move: Move,
     dump: Dump,
     patch: Patch,
     grep: Grep,

@@ -159,6 +159,14 @@ obsidian-vault meta "Projects/roadmap.md"
 obsidian-vault delete "Notes/old.md" --yes    # --yes skips confirmation
 ```
 
+### `move` — Move or rename a file
+
+```bash
+obsidian-vault move "Notes/draft.md" "Notes/final.md"
+obsidian-vault move "Inbox/todo.md" "Projects/App/todo.md" --yes
+obsidian-vault move "Notes/file.md" "Archive/file.md" --force --yes
+```
+
 ### `dump` — Export entire vault
 
 ```bash
