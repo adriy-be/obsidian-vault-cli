@@ -25,8 +25,10 @@ if (typeof globalThis.localStorage === "undefined") {
 }
 
 // ── 2. Import (after localStorage polyfill) ─────────────────────────────────
-import { DirectFileManipulator } from "../../livesync-commonlib/src/API/DirectFileManipulator.ts";
-import type { DirectFileManipulatorOptions } from "../../livesync-commonlib/src/API/DirectFileManipulatorV2.ts";
+import {
+    DirectFileManipulator,
+    type DirectFileManipulatorOptions,
+} from "../../livesync-commonlib/src/API/DirectFileManipulatorV2.ts";
 import { DEFAULT_SETTINGS } from "../../livesync-commonlib/src/common/types.ts";
 import { setGlobalLogFunction } from "octagonal-wheels/common/logger";
 

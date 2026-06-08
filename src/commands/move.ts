@@ -80,6 +80,10 @@ export default class Move extends Command {
 
         const dfm = await createDFM(flags.verbose);
         try {
+            if (typeof (dfm as any).move !== "function") {
+                this.error("LiveSync API mismatch: move() is unavailable in DirectFileManipulator instance");
+            }
+
             const files = await listFiles(dfm);
 
             const source = files.find(f =>
