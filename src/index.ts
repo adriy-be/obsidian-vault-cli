@@ -11,4 +11,6 @@ await run(process.argv.slice(2), import.meta.url)
     .catch(handle)
     .finally(async () => {
         await flush();
+        // Ensure the CLI terminates even if some library keeps background handles alive.
+        process.exit(process.exitCode ?? 0);
     });
