@@ -47,11 +47,14 @@ export default class Move extends Command {
 
     async run(): Promise<void> {
         const { args, flags } = await this.parse(Move);
-        let success = false;
+        const sourceBaseName = args.from.split("/").filter(Boolean).pop() ?? "";
+        const destinationPath = args.to.endsWith("/")
+            ? `${args.to}${sourceBaseName}`
+            : args.to;
 
-        if (args.from === args.to) {
+        if (args.from === destinationPath) {
             this.log(`Source and destination are identical: ${args.from}`);
-            process.exit(0);
+            return;
         }
 
         // Confirm unless --yes
@@ -63,7 +66,7 @@ export default class Move extends Command {
             });
 
             const confirmed = await new Promise<boolean>((resolve) => {
-                rl.question(`Move "${args.from}" -> "${args.to}"? [y/N] `, (answer) => {
+                rl.question(`Move "${args.from}" -> "${destinationPath}"? [y/N] `, (answer) => {
                     rl.close();
                     resolve(answer.toLowerCase() === "y" || answer.toLowerCase() === "yes");
                 });
@@ -71,7 +74,7 @@ export default class Move extends Command {
 
             if (!confirmed) {
                 this.log("Aborted.");
-                process.exit(0);
+                return;
             }
         }
 
@@ -89,24 +92,22 @@ export default class Move extends Command {
             }
 
             const destination = files.find(f =>
-                f.path === args.to ||
-                f.path.toLowerCase() === args.to.toLowerCase()
+                f.path === destinationPath ||
+                f.path.toLowerCase() === destinationPath.toLowerCase()
             );
 
             if (destination && !flags.force) {
-                this.error(`Destination already exists: ${args.to} (use --force to overwrite)`);
+                this.error(`Destination already exists: ${destinationPath} (use --force to overwrite)`);
             }
 
-            const moved = await dfm.move(source.path as any, args.to as any, flags.force);
+            const moved = await dfm.move(source.path as any, destinationPath as any, flags.force);
             if (!moved) {
-                this.error(`Move failed: ${source.path} -> ${args.to}`);
+                this.error(`Move failed: ${source.path} -> ${destinationPath}`);
             }
 
-            this.log(`Moved: ${source.path} -> ${args.to}`);
-            success = true;
+            this.log(`Moved: ${source.path} -> ${destinationPath}`);
         } finally {
             await dfm.close();
-            process.exit(success ? 0 : 1);
         }
     }
 }
