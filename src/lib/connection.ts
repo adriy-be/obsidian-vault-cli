@@ -164,6 +164,11 @@ export async function createDFM(verbose = false): Promise<DirectFileManipulator>
     const _origLog = console.log;
     const _origWarn = console.warn;
     const _origError = console.error;
+    const restoreConsole = () => {
+        console.log = _origLog;
+        console.warn = _origWarn;
+        console.error = _origError;
+    };
     if (!verbose) {
         console.log = () => {};
         console.warn = () => {};
@@ -174,56 +179,56 @@ export async function createDFM(verbose = false): Promise<DirectFileManipulator>
         // console.error already goes to stderr
     }
 
-    // Auto-detect vault settings from CouchDB
-    const vaultSettings = await fetchVaultSettings(
-        config.url, config.database, config.username, config.password
-    );
+    try {
+        // Auto-detect vault settings from CouchDB
+        const vaultSettings = await fetchVaultSettings(
+            config.url, config.database, config.username, config.password
+        );
 
-    // ── 3. Construct with auto-detected settings ────────────────────────────
-    const options: DirectFileManipulatorOptions = {
-        url:      config.url,
-        username: config.username,
-        password: config.password,
-        database: config.database,
-        passphrase:         config.passphrase,
-        obfuscatePassphrase: config.passphrase,
-        ...vaultSettings,
-    };
+        // ── 3. Construct with auto-detected settings ────────────────────────
+        const options: DirectFileManipulatorOptions = {
+            url:      config.url,
+            username: config.username,
+            password: config.password,
+            database: config.database,
+            passphrase:         config.passphrase,
+            obfuscatePassphrase: config.passphrase,
+            ...vaultSettings,
+        };
 
-    const dfm = new DirectFileManipulator(options);
+        const dfm = new DirectFileManipulator(options);
 
-    // ── 4. Wire handler stubs (synchronous, before init() runs) ────────────
-    (dfm.services as any).API.addLog.setHandler((message: any, level: number) => {
-        if (verbose && level >= 32) {
-            const msg = typeof message === "string" ? message : JSON.stringify(message);
-            console.error(`[livesync] ${msg}`);
-        }
-    });
-    (dfm.services as any).API.getSystemVaultName.setHandler(() => "livesync-headless");
-    (dfm.services as any).appLifecycle.isReloadingScheduled.setHandler(() => false);
-    (dfm.services as any).appLifecycle.askRestart.setHandler(() => {});
-    (dfm.services as any).appLifecycle.scheduleRestart.setHandler(() => {});
-    (dfm.services as any).appLifecycle.performRestart.setHandler(() => {});
+        // ── 4. Wire handler stubs (synchronous, before init() runs) ────────
+        (dfm.services as any).API.addLog.setHandler((message: any, level: number) => {
+            if (verbose && level >= 32) {
+                const msg = typeof message === "string" ? message : JSON.stringify(message);
+                console.error(`[livesync] ${msg}`);
+            }
+        });
+        (dfm.services as any).API.getSystemVaultName.setHandler(() => "livesync-headless");
+        (dfm.services as any).appLifecycle.isReloadingScheduled.setHandler(() => false);
+        (dfm.services as any).appLifecycle.askRestart.setHandler(() => {});
+        (dfm.services as any).appLifecycle.scheduleRestart.setHandler(() => {});
+        (dfm.services as any).appLifecycle.performRestart.setHandler(() => {});
 
-    // ── 5. Pre-wire database service ────────────────────────────────────────
-    (dfm.services as any).database._localDatabase = dfm.liveSyncLocalDB;
+        // ── 5. Pre-wire database service ────────────────────────────────────
+        (dfm.services as any).database._localDatabase = dfm.liveSyncLocalDB;
 
-    // ── 6. Inject settings with usePathObfuscation (CRITICAL) ──────────────
-    (dfm.services as any).setting.settings = {
-        ...DEFAULT_SETTINGS,
-        ...dfm.settings,
-        usePathObfuscation: vaultSettings.usePathObfuscation,
-    };
+        // ── 6. Inject settings with usePathObfuscation (CRITICAL) ──────────
+        (dfm.services as any).setting.settings = {
+            ...DEFAULT_SETTINGS,
+            ...dfm.settings,
+            usePathObfuscation: vaultSettings.usePathObfuscation,
+        };
 
-    // ── 7. Wait for ready ───────────────────────────────────────────────────
-    await dfm.ready.promise;
+        // ── 7. Wait for ready ───────────────────────────────────────────────
+        await dfm.ready.promise;
 
-    // Restore console after init (oclif needs console for its own output)
-    console.log = _origLog;
-    console.warn = _origWarn;
-    console.error = _origError;
-
-    return dfm;
+        return dfm;
+    } finally {
+        // Always restore console to avoid swallowing caller output/errors.
+        restoreConsole();
+    }
 }
 
 // ---------------------------------------------------------------------------

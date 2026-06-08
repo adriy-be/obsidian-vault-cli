@@ -55,7 +55,7 @@ export default class Delete extends Command {
 
             if (!confirmed) {
                 this.log("Aborted.");
-                process.exit(0);
+                return;
             }
         }
 
@@ -80,7 +80,6 @@ export default class Delete extends Command {
             }
         } finally {
             await dfm.close();
-            process.exit(0);
         }
     }
 }
